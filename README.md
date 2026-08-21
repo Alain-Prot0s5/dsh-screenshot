@@ -71,7 +71,7 @@ dsh plugin add https://github.com/Alian-Prot0s5/dsh-screenshot
 **From npm / 从 npm 安装**（DSH Desktop 市场受管安装，走标准插件验证）：
 
 ```powershell
-dsh plugin add @alian-prot0s5/dsh-screenshot
+dsh plugin add @alain-prot0s5/dsh-screenshot
 ```
 
 **Manual / 手动安装**（Desktop app 无独立 CLI 时）：
