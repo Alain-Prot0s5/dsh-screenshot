@@ -2,6 +2,7 @@
   "name": "@alain-prot0s5/dsh-screenshot",
   "version": "1.0.0",
   "description": "Screenshot-to-input for DeepSeek Harness: composer camera button + global hotkey (Alt+A) + listener bound to the app lifecycle, configurable in settings. 截图自动粘贴到 DSH 输入框：相机按钮 + 全局快捷键 + 生命周期绑定 + 设置页配置。",
+  "author": "Alain-Prot0s5 <prot0s5shenzu@gmail.com>",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
