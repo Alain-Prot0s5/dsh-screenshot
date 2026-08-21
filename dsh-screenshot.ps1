@@ -259,7 +259,8 @@ $script:SnipDeadline   = $null
 $script:SnipStartedAt  = $null
 $script:SnipSawProcess = $false   # 触发后是否见过 SnippingTool 进程（区分"冷启动未弹出"与"弹出后已退出"）
 
-function Start-Snip {
+function Start-Snip([string]$Source = '') {
+  $tag = if ($Source) { '（' + $Source + '）' } else { '' }
   # 单飞：一次截图流程进行中，忽略新触发（防止连击叠层/攒单补发）
   # 注意：截图取消（Esc/关闭遮罩）后 Tick-SnipPending 会立即复位，不会卡 30 秒
   if ($script:SnipPending) {
@@ -267,18 +268,18 @@ function Start-Snip {
     return
   }
   if ($DryRun) {
-    Write-Log ("DRY-RUN：DSH 前台=" + (Test-DshFocused) + "，本应触发截图流程")
+    Write-Log ("DRY-RUN" + $tag + "：DSH 前台=" + (Test-DshFocused) + "，本应触发截图流程")
     return
   }
   # 是否走"截图→自动粘贴"：需开启自动粘贴，且（DSH 在前台 或 开启后台跳转）
   $focused = Test-DshFocused
   $doPaste = $Config.AutoPaste -and ($focused -or $Config.SwitchWhenBackground)
   if (-not $doPaste) {
-    Write-Log '触发截图：未满足自动粘贴条件（未开启自动粘贴，或 DSH 在后台且未开启跳转）→ 仅打开系统截图（图片留在剪贴板）'
+    Write-Log ('触发截图' + $tag + '：未满足自动粘贴条件（未开启自动粘贴，或 DSH 在后台且未开启跳转）→ 仅打开系统截图（图片留在剪贴板）')
     Invoke-SystemSnip
     return
   }
-  Write-Log '触发截图：截图并自动粘贴到输入框'
+  Write-Log ('触发截图' + $tag + '：截图并自动粘贴到输入框')
   $script:SnipSeqBefore  = [DshSnipWin]::GetClipboardSequenceNumber()
   $script:SnipDeadline   = (Get-Date).AddSeconds($Config.WaitSec)
   $script:SnipStartedAt  = Get-Date
@@ -410,7 +411,7 @@ function Main {
   while ($true) {
     $msg = New-Object 'DshSnipWin+MSG'
     while ([DshSnipWin]::PeekMessage([ref]$msg, [IntPtr]::Zero, 0, 0, 1)) {
-      if ($msg.message -eq 0x0312) { Start-Snip }   # WM_HOTKEY
+      if ($msg.message -eq 0x0312) { Start-Snip -Source '热键' }   # WM_HOTKEY
       [DshSnipWin]::TranslateMessage([ref]$msg) | Out-Null
       [DshSnipWin]::DispatchMessage([ref]$msg) | Out-Null
       $msg = New-Object 'DshSnipWin+MSG'
@@ -419,7 +420,7 @@ function Main {
     Serve-TriggerRequest
     if (Test-Path $TriggerFile) {
       Remove-Item $TriggerFile -Force -ErrorAction SilentlyContinue
-      Start-Snip
+      Start-Snip -Source '按钮'
     }
     # 截图等待（非阻塞：每轮只查一次剪贴板，等待期间热键/按钮照常响应）
     Tick-SnipPending
