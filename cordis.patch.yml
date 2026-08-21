@@ -1,6 +1,9 @@
 # dsh-screenshot bundle layer: inserted when the package is installed into a
 # profile (package.json declares dsh.bundle.patch). Adds the screenshot-to-input
 # plugin row (host: listener lifecycle + settings; client: button + settings card).
+# DSH Desktop >= 2.0.2 requires the loader row `name` to be the exact npm package
+# name (the profile bundle entry and the client bundle id both derive from it),
+# so the row must use the scoped package name, not a bare short name.
 - insert:
     - id: dsh-screenshot
-      name: dsh-screenshot
+      name: "@alain-prot0s5/dsh-screenshot"

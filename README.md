@@ -77,11 +77,23 @@ dsh plugin add @alain-prot0s5/dsh-screenshot
 **Manual / 手动安装**（Desktop app 无独立 CLI 时）：
 
 ```powershell
-# 1) copy the package into the profile's node_modules (folder name = package name)
-Copy-Item -Path '<this folder>' -Destination "$env:USERPROFILE\.dsh\profiles\desktop\node_modules\dsh-screenshot" -Recurse
-# 2) add "dsh-screenshot" to dsh.profile.bundles in the profile package.json (UTF-8 WITHOUT BOM!)
+# 1) copy the package into the profile's node_modules under its FULL package name
+#    (DSH Desktop >= 2.0.2 enforces package identity: the folder, the manifest
+#    `name`, the bundle entry and the client id must all be the scoped name)
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.dsh\profiles\desktop\node_modules\@alain-prot0s5"
+Copy-Item -Path '<this folder>' -Destination "$env:USERPROFILE\.dsh\profiles\desktop\node_modules\@alain-prot0s5\dsh-screenshot" -Recurse
+# 2) add "@alain-prot0s5/dsh-screenshot" to dsh.profile.bundles in the profile
+#    package.json (UTF-8 WITHOUT BOM!)
 # 3) restart DSH Desktop
 ```
+
+> **DSH Desktop >= 2.0.2 compatibility / 兼容性说明**：the loader requires the
+> profile bundle entry, the plugin manifest `name`, the `cordis.patch.yml` row
+> `name` and the client bundle id to all be the exact npm package name
+> `@alain-prot0s5/dsh-screenshot` (no bare short names). This package complies.
+> DSH Desktop 2.0.2+ 要求 profile 的 bundles 条目、插件 package.json 的 `name`、
+> `cordis.patch.yml` 行 `name`、客户端 bundle id 全部等于完整包名
+> `@alain-prot0s5/dsh-screenshot`（不能用短名）。本包已按此规范发布。
 
 Restart and you should see the camera button next to the composer; the listener log is `dsh-screenshot.log` inside the plugin folder (look for `模式：热键=… 自动粘贴=… 后台跳转粘贴=…`).
 重启后输入框旁出现相机按钮；监听器日志在插件目录 `dsh-screenshot.log`（启动行含"模式：热键=… 自动粘贴=… 后台跳转粘贴=…"）。
