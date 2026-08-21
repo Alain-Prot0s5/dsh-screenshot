@@ -98,6 +98,16 @@ public static class DshSnipWin
     public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern IntPtr CreateMutex(IntPtr lpMutexAttributes, bool bInitialOwner, string lpName);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+
+    [DllImport("user32.dll")]
+    public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [DllImport("user32.dll")]
+    public static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")]
+    public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
 }
 '@ | Out-Null
 }
@@ -156,6 +166,13 @@ function Send-CtrlV {
   Start-Sleep -Milliseconds 30
   Send-VkUp 0x56
   Send-VkUp 0x11
+}
+
+function Send-MouseClick([int]$x, [int]$y) {
+  [DshSnipWin]::SetCursorPos($x, $y) | Out-Null
+  Start-Sleep -Milliseconds 40
+  [DshSnipWin]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)   # MOUSEEVENTF_LEFTDOWN
+  [DshSnipWin]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)   # MOUSEEVENTF_LEFTUP
 }
 
 function Send-AltTap {
@@ -304,8 +321,29 @@ function Tick-SnipPending {
       Safe-Beep 200 700
       return
     }
+    # 置前台 + 校验：SetForegroundWindow 对后台进程可能被系统忽略，失败就重试；
+    # 未确认 DSH 在前台就盲发 Ctrl+V 会误粘到其它窗口（极端情况在 explorer 里产生文件）。
     Set-DshForeground $hwnd | Out-Null
-    Start-Sleep -Milliseconds 250
+    $foregroundOk = $false
+    for ($i = 0; $i -lt 3; $i++) {
+      Start-Sleep -Milliseconds 150
+      if ([DshSnipWin]::GetForegroundWindow() -eq $hwnd) { $foregroundOk = $true; break }
+      Set-DshForeground $hwnd | Out-Null
+    }
+    if (-not $foregroundOk) {
+      Write-Log '警告：DSH 窗口未在前台（重试 3 次仍失败），跳过粘贴避免误粘到其它窗口'
+      Safe-Beep 320 200
+      return
+    }
+    # 点进输入框（窗口底部中央）：截图遮罩开合常让 Electron 重聚焦后丢失输入框焦点，
+    # 导致 Ctrl+V 落空（假粘贴，日志却记成功）。点击可确定性恢复输入框焦点。
+    $rect = New-Object 'DshSnipWin+RECT'
+    if ([DshSnipWin]::GetWindowRect($hwnd, [ref]$rect)) {
+      $cx = [int](($rect.Left + $rect.Right) / 2)
+      $cy = [int]($rect.Bottom - 30)
+      Send-MouseClick $cx $cy
+      Start-Sleep -Milliseconds 150
+    }
     Send-CtrlV
     Write-Log '已粘贴到 DSH 输入框 ✓'
     Safe-Beep 1200 120
