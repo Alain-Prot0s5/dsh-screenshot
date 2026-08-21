@@ -418,7 +418,8 @@ function Serve-TriggerRequest {
       try { [System.IO.File]::WriteAllText($TriggerFile, '1') } catch { }
       $body = '{"ok":true}'
     } elseif ($path -eq '/health') {
-      $body = '{"ok":true,"running":true}'
+      $pend = if ($script:SnipPending) { 'true' } else { 'false' }
+      $body = '{"ok":true,"running":true,"pending":' + $pend + '}'
     } else {
       $status = '404 Not Found'
       $body = '{"ok":false,"error":"not found"}'
