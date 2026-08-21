@@ -277,6 +277,7 @@ function Update-HotkeyOwnership {
 
 # ---------- 截图→粘贴主流程（热键与按钮共用，聚焦感知 + 非阻塞等待 + 单飞防抖） ----------
 $script:SnipPending    = $false
+$script:PasteActive   = $false   # 图像就绪→Ctrl+V 完成期间保持 true，供 /health 报告给客户端焦点守护
 $script:SnipSeqBefore  = [uint32]0
 $script:SnipDeadline   = $null
 $script:SnipStartedAt  = $null
@@ -319,11 +320,13 @@ function Tick-SnipPending {
             [DshSnipWin]::IsClipboardFormatAvailable(2)        # CF_BITMAP
   if ($hasImg -and [DshSnipWin]::GetClipboardSequenceNumber() -ne $script:SnipSeqBefore) {
     $script:SnipPending = $false
+    $script:PasteActive = $true   # 粘贴完成前保持 pending：客户端焦点守护（window.focus → /health）依赖它
     # 图片已进剪贴板。绝不杀 SnippingTool：它可能用延迟渲染提供剪贴板数据，
     # 杀掉会导致粘贴进 DSH 的图片损坏（手动 Ctrl+V 正常、自动粘贴损坏即此原因）。
     $hwnd = Get-DshWindowHandle
     if ($hwnd -eq [IntPtr]::Zero) {
       Write-Log '未找到 DSH 窗口：截图已在剪贴板，请手动 Ctrl+V。'
+      $script:PasteActive = $false
       Safe-Beep 200 700
       return
     }
@@ -338,6 +341,7 @@ function Tick-SnipPending {
     }
     if (-not $foregroundOk) {
       Write-Log '警告：DSH 窗口未在前台（重试 3 次仍失败），跳过粘贴避免误粘到其它窗口'
+      $script:PasteActive = $false
       Safe-Beep 320 200
       return
     }
@@ -347,6 +351,7 @@ function Tick-SnipPending {
     # 多等一会儿：让 DSH webview 完成激活与焦点恢复（截图遮罩开合后的竞态窗口）。
     Start-Sleep -Milliseconds 400
     Send-CtrlV
+    $script:PasteActive = $false
     Write-Log '已粘贴到 DSH 输入框 ✓'
     Safe-Beep 1200 120
     return
@@ -418,7 +423,7 @@ function Serve-TriggerRequest {
       try { [System.IO.File]::WriteAllText($TriggerFile, '1') } catch { }
       $body = '{"ok":true}'
     } elseif ($path -eq '/health') {
-      $pend = if ($script:SnipPending) { 'true' } else { 'false' }
+      $pend = if ($script:SnipPending -or $script:PasteActive) { 'true' } else { 'false' }
       $body = '{"ok":true,"running":true,"pending":' + $pend + '}'
     } else {
       $status = '404 Not Found'
