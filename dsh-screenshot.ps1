@@ -99,15 +99,28 @@ public static class DshSnipWin
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern IntPtr CreateMutex(IntPtr lpMutexAttributes, bool bInitialOwner, string lpName);
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+    [DllImport("user32.dll")]
+    public static extern bool OpenClipboard(IntPtr hWndNewOwner);
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetClipboardData(uint uFormat);
+    [DllImport("user32.dll")]
+    public static extern bool CloseClipboard();
 
-    [DllImport("user32.dll")]
-    public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
-    [DllImport("user32.dll")]
-    public static extern bool SetCursorPos(int x, int y);
-    [DllImport("user32.dll")]
-    public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
+    // 主动读一次剪贴板位图数据，迫使 SnippingTool 完成延迟渲染（delayed rendering），
+    // 避免"格式已就绪但数据未渲染完"时粘贴落空（间歇性假粘贴的候选根因之一）。
+    public static void PinClipboardImage()
+    {
+        if (!OpenClipboard(IntPtr.Zero)) return;
+        try
+        {
+            foreach (uint fmt in new uint[] { 8, 17, 2 }) // CF_DIB / CF_DIBV5 / CF_BITMAP
+            {
+                IntPtr h = GetClipboardData(fmt);
+                if (h != IntPtr.Zero) break;
+            }
+        }
+        finally { CloseClipboard(); }
+    }
 }
 '@ | Out-Null
 }
@@ -166,13 +179,6 @@ function Send-CtrlV {
   Start-Sleep -Milliseconds 30
   Send-VkUp 0x56
   Send-VkUp 0x11
-}
-
-function Send-MouseClick([int]$x, [int]$y) {
-  [DshSnipWin]::SetCursorPos($x, $y) | Out-Null
-  Start-Sleep -Milliseconds 40
-  [DshSnipWin]::mouse_event(0x0002, 0, 0, 0, [UIntPtr]::Zero)   # MOUSEEVENTF_LEFTDOWN
-  [DshSnipWin]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)   # MOUSEEVENTF_LEFTUP
 }
 
 function Send-AltTap {
@@ -335,15 +341,11 @@ function Tick-SnipPending {
       Safe-Beep 320 200
       return
     }
-    # 点进输入框（窗口底部中央）：截图遮罩开合常让 Electron 重聚焦后丢失输入框焦点，
-    # 导致 Ctrl+V 落空（假粘贴，日志却记成功）。点击可确定性恢复输入框焦点。
-    $rect = New-Object 'DshSnipWin+RECT'
-    if ([DshSnipWin]::GetWindowRect($hwnd, [ref]$rect)) {
-      $cx = [int](($rect.Left + $rect.Right) / 2)
-      $cy = [int]($rect.Bottom - 30)
-      Send-MouseClick $cx $cy
-      Start-Sleep -Milliseconds 150
-    }
+    # 主动读一次剪贴板位图：迫使 SnippingTool 完成延迟渲染（delayed rendering），
+    # 避免"格式已就绪但数据未渲染完"就粘贴导致落空。
+    [DshSnipWin]::PinClipboardImage() | Out-Null
+    # 多等一会儿：让 DSH webview 完成激活与焦点恢复（截图遮罩开合后的竞态窗口）。
+    Start-Sleep -Milliseconds 400
     Send-CtrlV
     Write-Log '已粘贴到 DSH 输入框 ✓'
     Safe-Beep 1200 120
