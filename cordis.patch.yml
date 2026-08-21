@@ -1,0 +1,6 @@
+# dsh-screenshot bundle layer: inserted when the package is installed into a
+# profile (package.json declares dsh.bundle.patch). Adds the screenshot-to-input
+# plugin row (host: listener lifecycle + settings; client: button + settings card).
+- insert:
+    - id: dsh-screenshot
+      name: dsh-screenshot

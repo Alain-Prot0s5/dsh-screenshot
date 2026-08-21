@@ -1,0 +1,25 @@
+# 日志（监听器运行产生的，不要提交）
+*.log
+
+# 依赖与构建产物
+node_modules/
+dist/
+lib/*.map
+
+# ===== 凭据/密钥文件 —— 绝对不要提交 =====
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+credentials.*
+secrets.*
+config.local.*
+token*.txt
+apikey*.txt
+
+# 系统/编辑器杂项
+.DS_Store
+Thumbs.db
+*.swp

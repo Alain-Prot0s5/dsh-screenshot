@@ -1,0 +1,9 @@
+# Normalize line endings for cross-platform clones
+* text=auto
+
+# Windows PowerShell scripts (BOM preserved; CRLF native on Windows)
+*.ps1 text eol=crlf
+
+# Config / manifest files
+*.yml text eol=lf
+*.json text eol=lf
