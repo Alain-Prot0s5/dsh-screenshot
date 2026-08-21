@@ -10,7 +10,7 @@ One-click screenshot straight into the Harness composer: a camera button next to
 >
 > **🖥️ 平台 / Platform**：**仅支持 Windows 10（1809+）与 Windows 11**——依赖系统自带截图工具（`ms-screenclip:`）与 Win32 API。macOS / Linux / Windows 7/8 不支持。
 >
-> **🧭 建议搭配 / Recommended companion**：**[dsh-vision-router](https://github.com/deepseek-ai/dsh-vision-router)** —— 截图自动粘进输入框后，由 vision-router 负责图片的视觉路由，实现「截图 → 提问 → 图片理解」的完整流程。
+> **🧭 建议搭配 / Recommended companion**：**[dsh-vision-router](https://github.com/ysr666/dsh-vision-router)** —— 截图自动粘进输入框后，由 vision-router 负责图片的视觉路由，实现「截图 → 提问 → 图片理解」的完整流程。
 
 ---
 
