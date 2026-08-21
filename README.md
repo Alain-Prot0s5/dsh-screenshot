@@ -60,12 +60,18 @@ One-click screenshot straight into the Harness composer: a camera button next to
 
 ## Install / 安装
 
-**From GitHub / 从 GitHub 安装**（发布后可用，需机器上有 dsh CLI）：
+**From GitHub / 从 GitHub 安装**（需机器上有 dsh CLI）：
 
 ```powershell
 dsh plugin --profile desktop add github:Alian-Prot0s5/dsh-screenshot
 # or / 或
 dsh plugin add https://github.com/Alian-Prot0s5/dsh-screenshot
+```
+
+**From npm / 从 npm 安装**（DSH Desktop 市场受管安装，走标准插件验证）：
+
+```powershell
+dsh plugin add @alian-prot0s5/dsh-screenshot
 ```
 
 **Manual / 手动安装**（Desktop app 无独立 CLI 时）：
