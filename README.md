@@ -44,6 +44,15 @@ One-click screenshot straight into the Harness composer: a camera button next to
 - 🧹 **Resilient** — non-blocking clipboard wait, single-flight debounce, cancel detection, stale SnippingTool cleanup, watchdog fallback
   可靠性：非阻塞等待、单飞防抖、取消检测、SnippingTool 卡死自愈、看门狗兜底
 
+## Screenshots / 截图
+
+| Screenshots / 截图 | Description / 说明 |
+|---|---|
+| ![Screenshot 1 - composer](assets/screenshot-1.png) | DSH Desktop composer with the camera button in the tool row / 输入框工具行里的相机按钮 |
+| ![Screenshot 2 - snipping toolbar](assets/screenshot-2.png) | System snipping tool (camera highlighted) / 系统截图工具（相机高亮） |
+| ![Screenshot 3 - copied to clipboard](assets/screenshot-3.png) | Screenshot copied to clipboard & saved automatically / 截图已复制到剪贴板并自动保存 |
+| ![Screenshot 4 - plugin settings](assets/screenshot-4.png) | `dsh-screenshot` plugin settings card / 插件设置卡片 |
+
 ## Requirements / 使用环境
 
 - **Windows 10（1809+）/ Windows 11** — uses the built-in system Snipping Tool

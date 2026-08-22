@@ -1,5 +1,10 @@
 # Changelog / 更新日志
 
+## Unreleased / 未发布
+
+**文档 / Docs**
+- README 增加 **Screenshots / 截图** 区（4 张：输入框相机按钮 / 截图相机工具栏 / 已复制到剪贴板 / 插件设置卡片），图片位于 `assets/`
+
 ## v1.0.2 (2026-08-22)
 
 **兼容 / Compatibility**
