@@ -1,0 +1,25 @@
+name: Publish to npm (trusted publishing)
+
+# 用 npm Trusted Publishing (OIDC)：无需任何 token，GitHub Actions 用 OIDC 换取发布权限。
+# 触发：推送 v* 标签（打 tag 即发布）；也支持手动 Run workflow。
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write       # 关键：允许 GitHub 为 npm 签发 OIDC 令牌
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      # 本包无构建步骤（lib/ 与 dsh-screenshot.ps1 已就位），直接发布
+      - name: Publish to npm
+        run: npm publish --provenance
