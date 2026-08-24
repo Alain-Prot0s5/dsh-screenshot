@@ -12,11 +12,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/alain-prot0s5/dsh-screenshot.git"
+    "url": "git+https://github.com/Alain-Prot0s5/dsh-screenshot.git"
   },
-  "homepage": "https://github.com/alain-prot0s5/dsh-screenshot#readme",
+  "homepage": "https://github.com/Alain-Prot0s5/dsh-screenshot#readme",
   "bugs": {
-    "url": "https://github.com/alain-prot0s5/dsh-screenshot/issues"
+    "url": "https://github.com/Alain-Prot0s5/dsh-screenshot/issues"
   },
   "keywords": [
     "dsh",
