@@ -18,9 +18,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24          # Node 24 自带 npm>=11.5.1，满足 npm Trusted Publishing 要求，无需再手动升级
           registry-url: https://registry.npmjs.org
-      # 临时诊断：确认是否满足 npm Trusted Publishing 的最低版本要求，并核对 OIDC 身份
+      # 临时诊断：确认 OIDC 身份与 npm 版本是否满足 Trusted Publishing 要求
       - name: Diagnose publishing environment
         run: |
           echo "Repository: ${{ github.repository }}"
@@ -30,9 +30,6 @@ jobs:
           node --version
           npm --version
           npm config get registry
-      # 关键：npm Trusted Publishing 要求 npm>=11.5.1 / Node>=22.14.0。Node 20 自带的 npm 仍是 10.x，必须升级。
-      - name: Upgrade npm
-        run: npm install --global npm@latest
       # 本包无构建步骤（lib/ 与 dsh-screenshot.ps1 已就位），直接发布。
       # OIDC/Trusted Publishing 下 npm 会自动生成 provenance，无需手动 --provenance。
       - name: Publish to npm
