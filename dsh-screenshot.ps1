@@ -56,6 +56,8 @@ $Config.AutoPaste = -not $NoAutoPaste
 $Config.SwitchWhenBackground = [bool]$SwitchWhenBackground
 
 # ---------- Win32 互操作 ----------
+# 读取剪贴板位图以校验"是否已渲染出有效图像"，避免盲贴裂图。
+Add-Type -AssemblyName System.Windows.Forms 2>$null
 if (-not ('DshSnipWin' -as [type])) {
   Add-Type -TypeDefinition @'
 using System;
@@ -94,6 +96,10 @@ public static class DshSnipWin
     public static extern uint GetCurrentThreadId();
     [DllImport("user32.dll")]
     public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")]
+    public static extern bool IsIconic(IntPtr hWnd);   // 窗口是否最小化
+    [DllImport("user32.dll")]
+    public static extern bool IsZoomed(IntPtr hWnd);   // 窗口是否最大化
     [DllImport("user32.dll")]
     public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -215,7 +221,9 @@ function Test-DshFocused {
 
 function Set-DshForeground([IntPtr]$hwnd) {
   if ($hwnd -eq [IntPtr]::Zero) { return $false }
-  [DshSnipWin]::ShowWindow($hwnd, 9) | Out-Null              # SW_RESTORE（最小化时恢复）
+  # 仅当窗口确实最小化时才 SW_RESTORE；已最大化/全屏则**保留其大小/位置**
+  #（否则 SW_RESTORE(9) 会把最大化/全屏窗口还原成普通小窗——dsh-screenshot 粘贴时的已知 bug）
+  if ([DshSnipWin]::IsIconic($hwnd)) { [DshSnipWin]::ShowWindow($hwnd, 9) | Out-Null }
   $fg = [DshSnipWin]::GetForegroundWindow()
   $fgTid = [uint32]0
   if ($fg -ne [IntPtr]::Zero) { [DshSnipWin]::GetWindowThreadProcessId($fg, [ref]$fgTid) | Out-Null }
@@ -348,8 +356,32 @@ function Tick-SnipPending {
     # 主动读一次剪贴板位图：迫使 SnippingTool 完成延迟渲染（delayed rendering），
     # 避免"格式已就绪但数据未渲染完"就粘贴导致落空。
     [DshSnipWin]::PinClipboardImage() | Out-Null
+    # 校验剪贴板里确实有"有效位图（宽/高>0）"后再粘贴；无效则多轮重试+重新 pin，避免粘贴到"裂图"。
+    # 轮数放宽到 ~25 次（约 2.5s）：即使 SnippingTool 延迟渲染较慢/偶发卡顿，也等它把图真正渲染出来再贴。
+    $imgOk = $false
+    for ($i = 0; $i -lt 25; $i++) {
+      Start-Sleep -Milliseconds 100
+      [DshSnipWin]::PinClipboardImage() | Out-Null
+      try {
+        $ci = [System.Windows.Forms.Clipboard]::GetImage()
+        if ($ci) {
+          if ($ci.Width -gt 0 -and $ci.Height -gt 0) { try { $ci.Dispose() } catch {}; $imgOk = $true; break }
+          try { $ci.Dispose() } catch {}
+        }
+      } catch {}
+    }
+    if (-not $imgOk) {
+      # 剪贴板图像始终无效/卡死（30s 裂图的那种"延迟渲染卡死"）：不盲贴避免"裂图"，
+      # 并做一次恢复：清掉这份损坏的剪贴板项 + 清理可能卡住的 SnippingTool，让下次截图从头来过。
+      Write-Log '警告：剪贴板图像约2.5秒仍未渲染出有效位图（疑似 SnippingTool 延迟渲染卡死），跳过自动粘贴；已清理剪贴板并复位卡住的截图进程，请重新截图。'
+      try { [System.Windows.Forms.Clipboard]::Clear() } catch {}
+      Clear-StaleSnippingTool
+      $script:PasteActive = $false
+      Safe-Beep 320 200
+      return
+    }
     # 多等一会儿：让 DSH webview 完成激活与焦点恢复（截图遮罩开合后的竞态窗口）。
-    Start-Sleep -Milliseconds 400
+    Start-Sleep -Milliseconds 300
     Send-CtrlV
     $script:PasteActive = $false
     Write-Log '已粘贴到 DSH 输入框 ✓'
