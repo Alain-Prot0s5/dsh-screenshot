@@ -20,6 +20,20 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org
-      # 本包无构建步骤（lib/ 与 dsh-screenshot.ps1 已就位），直接发布
+      # 临时诊断：确认是否满足 npm Trusted Publishing 的最低版本要求，并核对 OIDC 身份
+      - name: Diagnose publishing environment
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Owner: ${{ github.repository_owner }}"
+          echo "Workflow ref: ${{ github.workflow_ref }}"
+          echo "Workflow file name: npm-publish.yml"
+          node --version
+          npm --version
+          npm config get registry
+      # 关键：npm Trusted Publishing 要求 npm>=11.5.1 / Node>=22.14.0。Node 20 自带的 npm 仍是 10.x，必须升级。
+      - name: Upgrade npm
+        run: npm install --global npm@latest
+      # 本包无构建步骤（lib/ 与 dsh-screenshot.ps1 已就位），直接发布。
+      # OIDC/Trusted Publishing 下 npm 会自动生成 provenance，无需手动 --provenance。
       - name: Publish to npm
-        run: npm publish --provenance
+        run: npm publish --access public
